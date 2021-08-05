@@ -6,83 +6,47 @@ public class Main {
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
+        int fieldColumns = 9;
+        int fieldRows = 9;
+        final int maxNumberMines = fieldColumns * fieldRows;
+        int numberOfMines;
 
-        System.out.print("How many mines do you want on the field?\n> ");
-        int mines = sc.nextInt();
-
-        char[][] field = new char[9][9];
-
-        for (char[] chars : field) {
-            Arrays.fill(chars, '.');
-        }
-
-        printMineField(field, mines);
-    }
-
-    public static void placeMines(char[][] field, int mines) {
-        Random random = new Random();
-
-        int counter = 0;
-
-        while (counter < mines) {
-            int row = random.nextInt(9);
-            int column = random.nextInt(9);
-
-            if (field[row][column] == '.') {
-                field[row][column] = 'X';
-                counter++;
+        do {
+            System.out.print("How many mines do you want on the field?\n> ");
+            numberOfMines = sc.nextInt();
+            if (validNumberOfMines(numberOfMines, 0, maxNumberMines)) {
+                System.out.printf("Error: There can be a minimum of 1 and a maximum of %d mines on the field.%n", maxNumberMines);
             }
-        }
-    }
+        } while (validNumberOfMines(numberOfMines, 0, maxNumberMines));
+        Minefield field = new Minefield(fieldColumns, fieldRows, numberOfMines);
+        field.print();
 
-    public static String[][] findMines(char[][] field, int mines) {
+        // Game Loop
+        int columnNumber, rowNumber;
+        boolean canBeFlagged;
+        boolean coordinateInField;
 
-        placeMines(field, mines);
-
-        char[][] helpGrid = new char[11][11];
-        for (int i = 1; i < 10; i++) {
-            System.arraycopy(field[i - 1], 0, helpGrid[i], 1, 9);
-        }
-
-        int[][] countBombs = new int[11][11];
-        for (int i = 1; i < 10; i++) {
-            for (int j = 1; j < 10; j++) {
-                // if cells doesn't contain a bomb, check all nearby cells
-                if (helpGrid[i][j] == '.') {
-                    if (helpGrid[i - 1][j - 1] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i - 1][j] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i - 1][j + 1] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i][j + 1] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i + 1][j + 1] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i + 1][j] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i + 1][j - 1] == 'X') countBombs[i][j]++;
-                    if (helpGrid[i][j - 1] == 'X') countBombs[i][j]++;
-                }
-            }
-        }
-        String[][] finalGrid = new String[9][9];
-        for (int i = 0; i < field.length; i++) {
-            for (int j = 0; j < field[i].length; j++) {
-                if (countBombs[i + 1][j + 1] == 0 && helpGrid[i + 1][j + 1] == 'X') {
-                    finalGrid[i][j] = "X";
-                } else if (countBombs[i + 1][j + 1] == 0 && helpGrid[i + 1][j + 1] == '.') {
-                    finalGrid[i][j] = ".";
+        do {
+            do {
+                System.out.println("Set/delete mines marks (x and y coordinates): ");
+                columnNumber = sc.nextInt();
+                rowNumber = sc.nextInt();
+                coordinateInField = field.coordinateInField(rowNumber - 1, columnNumber - 1);
+                canBeFlagged = field.coordinateCanBeFlagged(rowNumber - 1, columnNumber - 1);
+                if (!coordinateInField) {
+                    System.out.println("This coordinate doesn't exist on the minefield.");
                 } else {
-                    finalGrid[i][j] = Integer.toString(countBombs[i + 1][j + 1]);
+                    if (!canBeFlagged) System.out.println("There is a number here!");
                 }
-            }
-        }
-        return finalGrid;
+            } while (!canBeFlagged || !coordinateInField);
+            field.flagCoordinate(rowNumber - 1, columnNumber - 1);
+            field.print();
+        } while (!field.gameOver());
+        System.out.println("Congratulations! You found all the mines!");
+
     }
 
-    public static void printMineField(char[][] field, int mines) {
-        String[][] mineField = findMines(field, mines);
-
-        for (String[] mm : mineField) {
-            for (String m : mm) {
-                System.out.print(m);
-            }
-            System.out.println();
-        }
+    private static boolean validNumberOfMines(int number, int min, int max) {
+        return number < min && number > max;
     }
 }
